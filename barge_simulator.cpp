@@ -1,21 +1,21 @@
 #include "barge_simulator.h"
 
-void BargeSimulator::clearInput() {
+void BargeSimulator::clearInput() { // Очистка буфера ввода после ошибочного ввода
     cin.clear();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-bool BargeSimulator::isValidInit(int N, int K, int P) {
+bool BargeSimulator::isValidInit(int N, int K, int P) { // Проверка корректности начальных параметров (N, K, P)
     return !(N < 1 || N > 100000 || K < 1 || K > 100000 || P < 1 || P > 100000);
 }
 
-bool BargeSimulator::isValidOp(char op, int A, int B, int K) {
+bool BargeSimulator::isValidOp(char op, int A, int B, int K) { // Проверка корректности операции (+/-) и параметров (A, B)
     return (op == '+' || op == '-') &&
            (A >= 1 && A <= K) &&
            (B >= 1 && B <= 10000);
 }
 
-int BargeSimulator::countBarrels() {
+int BargeSimulator::countBarrels() { // Подсчет общего количества бочек во всех отсеках
     int total = 0;
     for (const auto& c : comps) {
         total += c.second.size();
@@ -23,7 +23,7 @@ int BargeSimulator::countBarrels() {
     return total;
 }
 
-void BargeSimulator::showState() {
+void BargeSimulator::showState() { // Вывод текущего состояния баржи
     int total = 0;
     int used = 0;
     
@@ -56,7 +56,7 @@ void BargeSimulator::showState() {
     cout << "========================\n" << endl;
 }
 
-void BargeSimulator::load(int A, int B) {
+void BargeSimulator::load(int A, int B) { // Операция загрузки бочки в отсек
     int total = countBarrels();
     if (total >= P) {
         showError("Превышено максимальное количество бочек (" + to_string(P) + ")");
@@ -74,7 +74,7 @@ void BargeSimulator::load(int A, int B) {
     }
 }
 
-void BargeSimulator::unload(int A, int B) {
+void BargeSimulator::unload(int A, int B) { // Операция выгрузки бочки из отсека
     if (comps[A].empty()) {
         showError("Отсек " + to_string(A) + " пуст");
         has_error = true;
@@ -95,11 +95,11 @@ void BargeSimulator::unload(int A, int B) {
     showState();
 }
 
-void BargeSimulator::showError(const string& msg) {
-    cerr << "ОШИБКА! " << msg << endl;
+void BargeSimulator::showError(const string& msg) { // Вывод сообщения об ошибке
+    cerr << "ОШИБКА! " << msg << endl; 
 }
 
-void BargeSimulator::run() {
+void BargeSimulator::run() { // Основной метод работы симулятора
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
 
