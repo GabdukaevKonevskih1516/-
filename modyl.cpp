@@ -1,28 +1,28 @@
 #include "heder.h"
 #include <limits>
 
-void BargeSimulator::clearInput() {
+void BargeSimulator::clearInput() { // Очистка буфера ввода после ошибок
     cin.clear();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-bool BargeSimulator::isValidCommand(char op, int A, int B) {
+bool BargeSimulator::isValidCommand(char op, int A, int B) { // Проверка корректности введенной команды
     return (op == '+' || op == '-') && 
            (A >= 1 && A <= totalCompartments) && 
            (B >= 1 && B <= 10000);
 }
 
-void BargeSimulator::showState() {
+void BargeSimulator::showState() { // Выводим текущее состояние баржи
     currentBarrels = 0;
     int usedCompartments = 0;
     
-    for (const auto& comp : compartments) {
+    for (const auto& comp : compartments) { // Считаем общее количество бочек и занятых отсеков
         currentBarrels += comp.second.size();
         if (!comp.second.empty()) {
             usedCompartments++;
         }
     }
-
+    // Выводим состояние баржи
     cout << "\n=== Текущее состояние баржи ===" << endl;
     cout << "Всего бочек: " << currentBarrels << endl;
     cout << "Используется отсеков: " << usedCompartments << endl;
@@ -31,21 +31,21 @@ void BargeSimulator::showState() {
         cout << "Баржа пуста" << endl;
         return;
     }
-
-    for (const auto& comp : compartments) {
+    
+    for (const auto& comp : compartments) {  // Выводим содержимое каждого отсека
         if (!comp.second.empty()) {
             cout << "Отсек " << comp.first << ": ";
             for (int i = comp.second.size() - 1; i >= 0; --i) {
                 cout << comp.second[i];
                 if (i != 0) cout << " <- ";
             }
-            cout << " (верхняя: " << comp.second.back() << ")" << endl;
+            cout << " (верхняя: " << comp.second.back() << ")" << endl;  
         }
     }
     cout << "==============================" << endl;
 }
 
-void BargeSimulator::load(int compartment, int barrel) {
+void BargeSimulator::load(int compartment, int barrel) { // Загружаем бочку в указанный отсек
     if (currentBarrels >= maxBarrels) {
         cout << "ОШИБКА! Превышен лимит бочек (" << maxBarrels << ")" << endl;
         return;
@@ -56,13 +56,13 @@ void BargeSimulator::load(int compartment, int barrel) {
     showState();
 }
 
-void BargeSimulator::unload(int compartment, int barrel) {
+void BargeSimulator::unload(int compartment, int barrel) { // Выгружает бочку из указанного отсека
     if (compartments[compartment].empty()) {
         cout << "ОШИБКА! Отсек " << compartment << " пуст" << endl;
         return;
     }
 
-    if (compartments[compartment].back() != barrel) {
+    if (compartments[compartment].back() != barrel) {  // Проверка соответствия верхней бочки
         cout << "ОШИБКА! В отсеке " << compartment 
              << " верхняя бочка " << compartments[compartment].back()
              << ", а ожидалась " << barrel << endl;
@@ -74,7 +74,7 @@ void BargeSimulator::unload(int compartment, int barrel) {
     showState();
 }
 
-void BargeSimulator::run() {
+void BargeSimulator::run() { // Основной цикл
     cout << "=== Симулятор баржи ===" << endl;
     cout << "Введите количество операций, отсеков и лимит бочек: ";
     
