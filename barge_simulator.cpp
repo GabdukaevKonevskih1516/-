@@ -1,37 +1,136 @@
 #include "barge_simulator.h"
 
-void BargeSimulator::clearInput() { // Очистка буфера ввода после ошибочного ввода
+// РЕАЛИЗАЦИЯ МЕТОДОВ BARREL_LIST 
+
+// Добавление бочки в конец списка
+void BarrelList::push_back(int value) {
+    BarrelNode* newNode = new BarrelNode(value);
+    if (tail == nullptr) {
+        head = tail = newNode;
+    }
+    else {
+        tail->next = newNode;
+        newNode->prev = tail;
+        tail = newNode;
+    }
+    size++;
+}
+
+// Удаление бочки с конца списка
+void BarrelList::pop_back() {
+    if (tail == nullptr) return;
+
+    BarrelNode* toDelete = tail;
+    tail = tail->prev;
+    if (tail != nullptr) {
+        tail->next = nullptr;
+    }
+    else {
+        head = nullptr;
+    }
+    delete toDelete;
+    size--;
+}
+
+// Получение последней бочки
+int BarrelList::back() const {
+    if (tail == nullptr) throw BargeException("Список бочек пуст");
+    return tail->value;
+}
+
+// Проверка на пустоту
+bool BarrelList::empty() const {
+    return size == 0;
+}
+
+// Получение размера списка
+int BarrelList::getSize() const {
+    return size;
+}
+
+// Очистка списка
+void BarrelList::clear() {
+    while (head != nullptr) {
+        BarrelNode* temp = head;
+        head = head->next;
+        delete temp;
+    }
+    tail = nullptr;
+    size = 0;
+}
+
+// РЕАЛИЗАЦИЯ МЕТОДОВ COMPARTMENT_LIST 
+
+// Получение списка бочек по номеру отсека
+BarrelList& CompartmentList::getBarrelList(int id) {
+    CompartmentNode* current = head;
+    while (current != nullptr) {
+        if (current->id == id) {
+            return current->barrels;
+        }
+        current = current->next;
+    }
+
+    // Создание нового отсека, если не найден
+    CompartmentNode* newNode = new CompartmentNode(id);
+    newNode->next = head;
+    head = newNode;
+    return newNode->barrels;
+}
+
+// Очистка списка отсеков
+void CompartmentList::clear() {
+    while (head != nullptr) {
+        CompartmentNode* temp = head;
+        head = head->next;
+        delete temp;
+    }
+}
+
+// РЕАЛИЗАЦИЯ МЕТОДОВ BARGE_SIMULATOR
+
+// Очистка буфера ввода после ошибки
+void BargeSimulator::clearInput() {
     cin.clear();
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-bool BargeSimulator::isValidInit(int N, int K, int P) { // Проверка корректности начальных параметров (N, K, P)
+// Проверка корректности параметров инициализации
+bool BargeSimulator::isValidInit(int N, int K, int P) {
     return !(N < 1 || N > 100000 || K < 1 || K > 100000 || P < 1 || P > 100000);
 }
 
-bool BargeSimulator::isValidOp(char op, int A, int B, int K) { // Проверка корректности операции (+/-) и параметров (A, B)
+// Проверка корректности операции
+bool BargeSimulator::isValidOp(char op, int A, int B, int K) {
     return (op == '+' || op == '-') &&
-           (A >= 1 && A <= K) &&
-           (B >= 1 && B <= 10000);
+        (A >= 1 && A <= K) &&
+        (B >= 1 && B <= 10000);
 }
 
-int BargeSimulator::countBarrels() { // Подсчет общего количества бочек во всех отсеках
+// Подсчет общего количества бочек
+int BargeSimulator::countBarrels() {
     int total = 0;
-    for (const auto& c : comps) {
-        total += c.second.size();
+    CompartmentNode* current = compartments.begin();
+    while (current != nullptr) {
+        total += current->barrels.getSize();
+        current = current->next;
     }
     return total;
 }
 
-void BargeSimulator::showState() { // Вывод текущего состояния баржи
+// Отображение текущего состояния баржи
+void BargeSimulator::showState() {
     int total = 0;
     int used = 0;
-    
-    for (const auto& c : comps) {
-        total += c.second.size();
-        if (!c.second.empty()) {
+
+    CompartmentNode* comp = compartments.begin();
+    while (comp != nullptr) {
+        int size = comp->barrels.getSize();
+        total += size;
+        if (size > 0) {
             used++;
         }
+        comp = comp->next;
     }
 
     cout << "\n=== Текущее состояние ===" << endl;
@@ -40,23 +139,27 @@ void BargeSimulator::showState() { // Вывод текущего состоян
 
     if (total == 0) {
         cout << "Баржа пуста" << endl;
-        return;
     }
-
-    for (const auto& c : comps) {
-        if (!c.second.empty()) {
-            cout << "Отсек " << c.first << ": ";
-            for (int i = c.second.size() - 1; i >= 0; --i) {
-                cout << c.second[i];
-                if (i != 0) cout << " <- ";
+    else {
+        comp = compartments.begin();
+        while (comp != nullptr) {
+            if (!comp->barrels.empty()) {
+                cout << "Отсек " << comp->id << ": ";
+                BarrelNode* barrel = comp->barrels.begin();
+                while (barrel != nullptr) {
+                    cout << barrel->value;
+                    barrel = barrel->next;
+                    if (barrel != nullptr) cout << " <- ";
+                }
+                cout << " (верхняя: " << comp->barrels.back() << ")" << endl;
             }
-            cout << " (верхняя: " << c.second.back() << ")" << endl;
+            comp = comp->next;
         }
     }
     cout << "========================\n" << endl;
 }
-
-void BargeSimulator::load(int A, int B) { // Операция загрузки бочки в отсек
+// Операция загрузки бочки
+void BargeSimulator::load(int A, int B) {
     int total = countBarrels();
     if (total >= P) {
         showError("Превышено максимальное количество бочек (" + to_string(P) + ")");
@@ -64,42 +167,46 @@ void BargeSimulator::load(int A, int B) { // Операция загрузки �
         return;
     }
 
-    comps[A].push_back(B);
+    compartments.getBarrelList(A).push_back(B);
     cout << "\nДобавлена бочка " << B << " в отсек " << A << endl;
-    showState();
-    
+
     total++;
     if (total > max_b) {
         max_b = total;
     }
+    showState();
 }
 
-void BargeSimulator::unload(int A, int B) { // Операция выгрузки бочки из отсека
-    if (comps[A].empty()) {
+// Операция выгрузки бочки
+void BargeSimulator::unload(int A, int B) {
+    BarrelList& barrels = compartments.getBarrelList(A);
+    if (barrels.empty()) {
         showError("Отсек " + to_string(A) + " пуст");
         has_error = true;
         return;
     }
 
-    if (comps[A].back() != B) {
+    if (barrels.back() != B) {
         showError("Ожидалась бочка " + to_string(B) +
-                 ", а в отсеке " + to_string(A) +
-                 " верхняя бочка " + to_string(comps[A].back()));
+            ", а в отсеке " + to_string(A) +
+            " верхняя бочка " + to_string(barrels.back()));
         has_error = true;
         return;
     }
 
-    cout << "\nИзвлечена бочка " << comps[A].back()
-         << " из отсека " << A << endl;
-    comps[A].pop_back();
+    cout << "\nИзвлечена бочка " << barrels.back()
+        << " из отсека " << A << endl;
+    barrels.pop_back();
     showState();
 }
 
-void BargeSimulator::showError(const string& msg) { // Вывод сообщения об ошибке
-    cerr << "ОШИБКА! " << msg << endl; 
+// Вывод сообщения об ошибке
+void BargeSimulator::showError(const string& msg) {
+    cerr << "ОШИБКА! " << msg << endl;
 }
 
-void BargeSimulator::run() { // Основной метод работы симулятора
+// Основной метод работы симулятора
+void BargeSimulator::run() {
     ios_base::sync_with_stdio(false);
     cin.tie(nullptr);
 
@@ -156,11 +263,17 @@ void BargeSimulator::run() { // Основной метод работы сим�
             }
         }
 
-        if (op == '+') {
-            load(A, B);
+        try {
+            if (op == '+') {
+                load(A, B);
+            }
+            else {
+                unload(A, B);
+            }
         }
-        else {
-            unload(A, B);
+        catch (const BargeException& e) {
+            showError(e.what());
+            has_error = true;
         }
     }
 
@@ -176,7 +289,7 @@ void BargeSimulator::run() { // Основной метод работы сим�
         }
     }
 
-    // Результат
+    // Вывод результата
     cout << "\n=== Результат ===" << endl;
     if (has_error) {
         cout << "Error" << endl;
@@ -184,4 +297,7 @@ void BargeSimulator::run() { // Основной метод работы сим�
     else {
         cout << "Максимум бочек: " << max_b << endl;
     }
+
+    // Очистка памяти
+    compartments.clear();
 }
